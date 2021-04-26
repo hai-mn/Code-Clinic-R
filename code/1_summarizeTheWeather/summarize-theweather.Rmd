@@ -27,23 +27,32 @@ geometry: margin=1in
 
 # Setup and Libraries
 
-```{r}
+```{r, message=F, warning=F}
 library(magrittr)
-library(lubridate)
+library(lubridate) #ymd_hms
+library(tidyverse)
+library(kableExtra) #kable
 ```
 
 # Introduction
+
 This Code Clinic problem is about calculating statistics from a data set.
 It's easy stuff, but presents a good example of how different languages
 accomplish common tasks.
 
 
 # Import the source data
+
 The data set is weather data captured from Lake Pend O'Reille
-in Northern Idaho. We have almost 20 megabytes of data from the
-years 2012 thorugh 2015. That data is available in the folder with
+in Northern Idaho --- https://github.com/lyndadotcom/LPO_weatherdata.
+We have almost 20 megabytes of data from the years 2012 thorough 2015.
+That data is available in the folder with
 other exercise files. Each observation in the data includes several
 variables and the data is straightforward.
+
+```{r, include=F}
+link <- "https://raw.githubusercontent.com/lyndadotcom/LPO_weatherdata/master/Environmental_Data_Deep_Moor_"
+```
 
 ```{r}
 mytempfile <- tempfile()
@@ -53,17 +62,23 @@ readOneFile <- function(dataPath) {
              header = TRUE,
              stringsAsFactors = FALSE)
 }
+```
 
+With the large file, we should create the progress bar to see how long we should know to wait for the reading into r by using `txtProgressBar` function.
+
+```{r}
 myProgressBar <- txtProgressBar(min = 2012, max = 2015, style = 3)
+```
 
+
+```{r}
 for (dataYear in 2012:2015) {
   
   dataPath <-
     paste0(
-      "https://raw.githubusercontent.com/lyndadotcom/LPO_weatherdata/master/Environmental_Data_Deep_Moor_",
+      link,
       dataYear,
-      ".txt"
-    )
+      ".txt")
   
   if (exists("LPO_weather_data")) {
     mytempfile <- readOneFile(dataPath)
@@ -74,15 +89,26 @@ for (dataYear in 2012:2015) {
   setTxtProgressBar(myProgressBar, value = dataYear)
   
 }
+```
 
-# confirm the results of the import
-head(LPO_weather_data, n = 3)
-tail(LPO_weather_data, n = 3)
+```{r, include=FALSE, eval=FALSE}
+#saveRDS(LPO_weather_data, file = "LPO_weather_data.Rds")
+LPO_weather_data <- readRDS(file = "LPO_weather_data.Rds")
+```
+
+# Confirm the results of the import
+```{r}
+kbl(head(LPO_weather_data, n = 3), booktabs = T) %>% 
+  kable_styling(latex_options = c("striped", "scale_down"))
+
+kbl(tail(LPO_weather_data, n = 3), booktabs = T) %>% 
+  kable_styling(latex_options = c("striped", "scale_down"))
 
 print(paste("Number of rows imported: ", nrow(LPO_weather_data)))
 ```
 
 # Calculate the Coefficient of Barometric Pressure 
+
 The problem is simple: Write a function that accepts ...
 a beginning date and time
 ...and...
@@ -101,13 +127,14 @@ helper function to get a subset of LPO_weather_data
 observations are the date range
 variables are barometric pressure, date, and time
 
+> Transform dates stored as character or numeric vectors to POSIXct objects. The ymd_hms() family of functions recognizes all non-alphanumeric separators (with the exception of "." if frac = TRUE) and correctly handles heterogeneous date-time representations. For more flexibility in treatment of heterogeneous formats, see low level parser parse_date_time().
+
 ```{r}
 getBaromPressures <- function(dateTimeInterval) {
-  subset(
-    LPO_weather_data,
-    ymd_hms(paste(date, time)) %within% dateTimeInterval,
-    select = c(Barometric_Press, date, time)
-  )
+  subset(LPO_weather_data,
+         ymd_hms(paste(date, time)) %within% dateTimeInterval,
+         select = c(Barometric_Press, date, time)
+         )
 }
 
 calculateBaroPress <- function(startDateTime, endDateTime) {
@@ -126,9 +153,15 @@ calculateBaroPress(startDateTime, endDateTime)
 ```
 
 A rising slope indicates an increasing barometric pressure,
-which typically means fair and sunny weather. A falling slope
+which typically means fair and sunny weather. 
+
+![Barometric ~ rising slope (adapted from LinkedIn Learning)](Barometric_rising slope.PNG)
+
+A falling slope
 indicates a decreasing barometric pressure, which typically means
 stormy weather.
+
+![Barometric ~ falling slope (adapted from LinkedIn Learning)](Barometric_falling slope.PNG)
 
 We're only asking for the coefficient – but some may choose
 to generate a graph of the results as well.

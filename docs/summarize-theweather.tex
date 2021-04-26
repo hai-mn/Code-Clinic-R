@@ -83,16 +83,6 @@
 \newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
 \newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
 \newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
-\usepackage{longtable,booktabs}
-\usepackage{calc} % for calculating minipage widths
-% Correct order of tables after \paragraph or \subparagraph
-\usepackage{etoolbox}
-\makeatletter
-\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
-\makeatother
-% Allow footnotes in longtable head/foot
-\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
-\makesavenoteenv{longtable}
 \usepackage{graphicx}
 \makeatletter
 \def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
@@ -110,6 +100,20 @@
 \providecommand{\tightlist}{%
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
 \setcounter{secnumdepth}{5}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{colortbl}
+\usepackage{pdflscape}
+\usepackage{tabu}
+\usepackage{threeparttable}
+\usepackage{threeparttablex}
+\usepackage[normalem]{ulem}
+\usepackage{makecell}
+\usepackage{xcolor}
 \ifluatex
   \usepackage{selnolig}  % disable illegal ligatures
 \fi
@@ -131,20 +135,11 @@
 \begin{Shaded}
 \begin{Highlighting}[]
 \FunctionTok{library}\NormalTok{(magrittr)}
-\FunctionTok{library}\NormalTok{(lubridate)}
+\FunctionTok{library}\NormalTok{(lubridate) }\CommentTok{\#ymd\_hms}
+\FunctionTok{library}\NormalTok{(tidyverse)}
+\FunctionTok{library}\NormalTok{(kableExtra) }\CommentTok{\#kable}
 \end{Highlighting}
 \end{Shaded}
-
-\begin{verbatim}
-## 
-## Attaching package: 'lubridate'
-\end{verbatim}
-
-\begin{verbatim}
-## The following objects are masked from 'package:base':
-## 
-##     date, intersect, setdiff, union
-\end{verbatim}
 
 \hypertarget{introduction}{%
 \section{Introduction}\label{introduction}}
@@ -157,10 +152,11 @@ languages accomplish common tasks.
 \section{Import the source data}\label{import-the-source-data}}
 
 The data set is weather data captured from Lake Pend O'Reille in
-Northern Idaho. We have almost 20 megabytes of data from the years 2012
-thorugh 2015. That data is available in the folder with other exercise
-files. Each observation in the data includes several variables and the
-data is straightforward.
+Northern Idaho --- \url{https://github.com/lyndadotcom/LPO_weatherdata}.
+We have almost 20 megabytes of data from the years 2012 thorough 2015.
+That data is available in the folder with other exercise files. Each
+observation in the data includes several variables and the data is
+straightforward.
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -171,17 +167,28 @@ data is straightforward.
              \AttributeTok{header =} \ConstantTok{TRUE}\NormalTok{,}
              \AttributeTok{stringsAsFactors =} \ConstantTok{FALSE}\NormalTok{)}
 \NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
 
+With the large file, we should create the progress bar to see how long
+we should know to wait for the reading into r by using
+\texttt{txtProgressBar} function.
+
+\begin{Shaded}
+\begin{Highlighting}[]
 \NormalTok{myProgressBar }\OtherTok{\textless{}{-}} \FunctionTok{txtProgressBar}\NormalTok{(}\AttributeTok{min =} \DecValTok{2012}\NormalTok{, }\AttributeTok{max =} \DecValTok{2015}\NormalTok{, }\AttributeTok{style =} \DecValTok{3}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
 
+\begin{Shaded}
+\begin{Highlighting}[]
 \ControlFlowTok{for}\NormalTok{ (dataYear }\ControlFlowTok{in} \DecValTok{2012}\SpecialCharTok{:}\DecValTok{2015}\NormalTok{) \{}
   
 \NormalTok{  dataPath }\OtherTok{\textless{}{-}}
     \FunctionTok{paste0}\NormalTok{(}
-      \StringTok{"https://raw.githubusercontent.com/lyndadotcom/LPO\_weatherdata/master/Environmental\_Data\_Deep\_Moor\_"}\NormalTok{,}
+\NormalTok{      link,}
 \NormalTok{      dataYear,}
-      \StringTok{".txt"}
-\NormalTok{    )}
+      \StringTok{".txt"}\NormalTok{)}
   
   \ControlFlowTok{if}\NormalTok{ (}\FunctionTok{exists}\NormalTok{(}\StringTok{"LPO\_weather\_data"}\NormalTok{)) \{}
 \NormalTok{    mytempfile }\OtherTok{\textless{}{-}} \FunctionTok{readOneFile}\NormalTok{(dataPath)}
@@ -199,260 +206,51 @@ data is straightforward.
 ##   |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================================| 100%
 \end{verbatim}
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\CommentTok{\# confirm the results of the import}
-\FunctionTok{head}\NormalTok{(LPO\_weather\_data, }\AttributeTok{n =} \DecValTok{3}\NormalTok{)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{longtable}[]{@{}llrrrrrrr@{}}
-\toprule
-\begin{minipage}[b]{(\columnwidth - 8\tabcolsep) * \real{0.11}}\raggedright
-date\strut
-\end{minipage} &
-\begin{minipage}[b]{(\columnwidth - 8\tabcolsep) * \real{0.09}}\raggedright
-time\strut
-\end{minipage} &
-\begin{minipage}[b]{(\columnwidth - 8\tabcolsep) * \real{0.09}}\raggedleft
-Air\_Temp\strut
-\end{minipage} &
-\begin{minipage}[b]{(\columnwidth - 8\tabcolsep) * \real{0.16}}\raggedleft
-Barometric\_Press\strut
-\end{minipage} &
-\begin{minipage}[b]{(\columnwidth - 8\tabcolsep) * \real{0.10}}\raggedleft
-Dew\_Point\strut
-\end{minipage} &
-\begin{minipage}[b]{(\columnwidth - 8\tabcolsep) * \real{0.17}}\raggedleft
-Relative\_Humidity\strut
-\end{minipage} &
-\begin{minipage}[b]{(\columnwidth - 8\tabcolsep) * \real{0.09}}\raggedleft
-Wind\_Dir\strut
-\end{minipage} &
-\begin{minipage}[b]{(\columnwidth - 8\tabcolsep) * \real{0.10}}\raggedleft
-Wind\_Gust\strut
-\end{minipage} &
-\begin{minipage}[b]{(\columnwidth - 8\tabcolsep) * \real{0.11}}\raggedleft
-Wind\_Speed\strut
-\end{minipage}\tabularnewline
-\midrule
-\endhead
-\begin{minipage}[t]{(\columnwidth - 8\tabcolsep) * \real{0.11}}\raggedright
-2012\_01\_01\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 8\tabcolsep) * \real{0.09}}\raggedright
-00:02:14\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 8\tabcolsep) * \real{0.09}}\raggedleft
-34.3\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 8\tabcolsep) * \real{0.16}}\raggedleft
-30.5\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 8\tabcolsep) * \real{0.10}}\raggedleft
-26.9\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 8\tabcolsep) * \real{0.17}}\raggedleft
-74.2\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 8\tabcolsep) * \real{0.09}}\raggedleft
-346.4\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 8\tabcolsep) * \real{0.10}}\raggedleft
-11\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 8\tabcolsep) * \real{0.11}}\raggedleft
-3.6\strut
-\end{minipage}\tabularnewline
-\begin{minipage}[t]{(\columnwidth - 8\tabcolsep) * \real{0.11}}\raggedright
-2012\_01\_01\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 8\tabcolsep) * \real{0.09}}\raggedright
-00:08:29\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 8\tabcolsep) * \real{0.09}}\raggedleft
-34.1\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 8\tabcolsep) * \real{0.16}}\raggedleft
-30.5\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 8\tabcolsep) * \real{0.10}}\raggedleft
-26.5\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 8\tabcolsep) * \real{0.17}}\raggedleft
-73.6\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 8\tabcolsep) * \real{0.09}}\raggedleft
-349.0\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 8\tabcolsep) * \real{0.10}}\raggedleft
-12\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 8\tabcolsep) * \real{0.11}}\raggedleft
-8.0\strut
-\end{minipage}\tabularnewline
-\begin{minipage}[t]{(\columnwidth - 8\tabcolsep) * \real{0.11}}\raggedright
-2012\_01\_01\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 8\tabcolsep) * \real{0.09}}\raggedright
-00:14:45\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 8\tabcolsep) * \real{0.09}}\raggedleft
-33.9\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 8\tabcolsep) * \real{0.16}}\raggedleft
-30.6\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 8\tabcolsep) * \real{0.10}}\raggedleft
-26.8\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 8\tabcolsep) * \real{0.17}}\raggedleft
-75.0\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 8\tabcolsep) * \real{0.09}}\raggedleft
-217.8\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 8\tabcolsep) * \real{0.10}}\raggedleft
-12\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 8\tabcolsep) * \real{0.11}}\raggedleft
-9.2\strut
-\end{minipage}\tabularnewline
-\bottomrule
-\end{longtable}
+\hypertarget{confirm-the-results-of-the-import}{%
+\section{Confirm the results of the
+import}\label{confirm-the-results-of-the-import}}
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\FunctionTok{tail}\NormalTok{(LPO\_weather\_data, }\AttributeTok{n =} \DecValTok{3}\NormalTok{)}
+\FunctionTok{kbl}\NormalTok{(}\FunctionTok{head}\NormalTok{(LPO\_weather\_data, }\AttributeTok{n =} \DecValTok{3}\NormalTok{), }\AttributeTok{booktabs =}\NormalTok{ T) }\SpecialCharTok{\%\textgreater{}\%} 
+  \FunctionTok{kable\_styling}\NormalTok{(}\AttributeTok{latex\_options =} \FunctionTok{c}\NormalTok{(}\StringTok{"striped"}\NormalTok{, }\StringTok{"scale\_down"}\NormalTok{))}
 \end{Highlighting}
 \end{Shaded}
 
-\begin{longtable}[]{@{}lllrrrrrrr@{}}
+\begin{table}
+\centering
+\resizebox{\linewidth}{!}{
+\begin{tabular}[t]{llrrrrrrr}
 \toprule
-\begin{minipage}[b]{(\columnwidth - 9\tabcolsep) * \real{0.06}}\raggedright
-\strut
-\end{minipage} &
-\begin{minipage}[b]{(\columnwidth - 9\tabcolsep) * \real{0.10}}\raggedright
-date\strut
-\end{minipage} &
-\begin{minipage}[b]{(\columnwidth - 9\tabcolsep) * \real{0.08}}\raggedright
-time\strut
-\end{minipage} &
-\begin{minipage}[b]{(\columnwidth - 9\tabcolsep) * \real{0.08}}\raggedleft
-Air\_Temp\strut
-\end{minipage} &
-\begin{minipage}[b]{(\columnwidth - 9\tabcolsep) * \real{0.15}}\raggedleft
-Barometric\_Press\strut
-\end{minipage} &
-\begin{minipage}[b]{(\columnwidth - 9\tabcolsep) * \real{0.09}}\raggedleft
-Dew\_Point\strut
-\end{minipage} &
-\begin{minipage}[b]{(\columnwidth - 9\tabcolsep) * \real{0.16}}\raggedleft
-Relative\_Humidity\strut
-\end{minipage} &
-\begin{minipage}[b]{(\columnwidth - 9\tabcolsep) * \real{0.08}}\raggedleft
-Wind\_Dir\strut
-\end{minipage} &
-\begin{minipage}[b]{(\columnwidth - 9\tabcolsep) * \real{0.09}}\raggedleft
-Wind\_Gust\strut
-\end{minipage} &
-\begin{minipage}[b]{(\columnwidth - 9\tabcolsep) * \real{0.10}}\raggedleft
-Wind\_Speed\strut
-\end{minipage}\tabularnewline
+date & time & Air\_Temp & Barometric\_Press & Dew\_Point & Relative\_Humidity & Wind\_Dir & Wind\_Gust & Wind\_Speed\\
 \midrule
-\endhead
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.06}}\raggedright
-315463\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.10}}\raggedright
-2015\_06\_04\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.08}}\raggedright
-01:04:21\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.08}}\raggedleft
-57.7\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.15}}\raggedleft
-29.95\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.09}}\raggedleft
-51.22\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.16}}\raggedleft
-79.0\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.08}}\raggedleft
-179.41\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.09}}\raggedleft
-9\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.10}}\raggedleft
-6.8\strut
-\end{minipage}\tabularnewline
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.06}}\raggedright
-315464\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.10}}\raggedright
-2015\_06\_04\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.08}}\raggedright
-01:06:59\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.08}}\raggedleft
-57.7\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.15}}\raggedleft
-29.95\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.09}}\raggedleft
-51.28\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.16}}\raggedleft
-79.2\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.08}}\raggedleft
-167.78\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.09}}\raggedleft
-11\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.10}}\raggedleft
-8.8\strut
-\end{minipage}\tabularnewline
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.06}}\raggedright
-315465\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.10}}\raggedright
-2015\_06\_04\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.08}}\raggedright
-01:09:21\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.08}}\raggedleft
-57.7\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.15}}\raggedleft
-29.95\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.09}}\raggedleft
-51.22\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.16}}\raggedleft
-79.0\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.08}}\raggedleft
-163.40\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.09}}\raggedleft
-12\strut
-\end{minipage} &
-\begin{minipage}[t]{(\columnwidth - 9\tabcolsep) * \real{0.10}}\raggedleft
-10.0\strut
-\end{minipage}\tabularnewline
+\cellcolor{gray!6}{2012\_01\_01} & \cellcolor{gray!6}{00:02:14} & \cellcolor{gray!6}{34.3} & \cellcolor{gray!6}{30.5} & \cellcolor{gray!6}{26.9} & \cellcolor{gray!6}{74.2} & \cellcolor{gray!6}{346.4} & \cellcolor{gray!6}{11} & \cellcolor{gray!6}{3.6}\\
+2012\_01\_01 & 00:08:29 & 34.1 & 30.5 & 26.5 & 73.6 & 349.0 & 12 & 8.0\\
+\cellcolor{gray!6}{2012\_01\_01} & \cellcolor{gray!6}{00:14:45} & \cellcolor{gray!6}{33.9} & \cellcolor{gray!6}{30.6} & \cellcolor{gray!6}{26.8} & \cellcolor{gray!6}{75.0} & \cellcolor{gray!6}{217.8} & \cellcolor{gray!6}{12} & \cellcolor{gray!6}{9.2}\\
 \bottomrule
-\end{longtable}
+\end{tabular}}
+\end{table}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{kbl}\NormalTok{(}\FunctionTok{tail}\NormalTok{(LPO\_weather\_data, }\AttributeTok{n =} \DecValTok{3}\NormalTok{), }\AttributeTok{booktabs =}\NormalTok{ T) }\SpecialCharTok{\%\textgreater{}\%} 
+  \FunctionTok{kable\_styling}\NormalTok{(}\AttributeTok{latex\_options =} \FunctionTok{c}\NormalTok{(}\StringTok{"striped"}\NormalTok{, }\StringTok{"scale\_down"}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{table}
+\centering
+\resizebox{\linewidth}{!}{
+\begin{tabular}[t]{lllrrrrrrr}
+\toprule
+  & date & time & Air\_Temp & Barometric\_Press & Dew\_Point & Relative\_Humidity & Wind\_Dir & Wind\_Gust & Wind\_Speed\\
+\midrule
+\cellcolor{gray!6}{315463} & \cellcolor{gray!6}{2015\_06\_04} & \cellcolor{gray!6}{01:04:21} & \cellcolor{gray!6}{57.7} & \cellcolor{gray!6}{29.95} & \cellcolor{gray!6}{51.22} & \cellcolor{gray!6}{79.0} & \cellcolor{gray!6}{179.41} & \cellcolor{gray!6}{9} & \cellcolor{gray!6}{6.8}\\
+315464 & 2015\_06\_04 & 01:06:59 & 57.7 & 29.95 & 51.28 & 79.2 & 167.78 & 11 & 8.8\\
+\cellcolor{gray!6}{315465} & \cellcolor{gray!6}{2015\_06\_04} & \cellcolor{gray!6}{01:09:21} & \cellcolor{gray!6}{57.7} & \cellcolor{gray!6}{29.95} & \cellcolor{gray!6}{51.22} & \cellcolor{gray!6}{79.0} & \cellcolor{gray!6}{163.40} & \cellcolor{gray!6}{12} & \cellcolor{gray!6}{10.0}\\
+\bottomrule
+\end{tabular}}
+\end{table}
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -485,14 +283,22 @@ coefficient of the slope of barometric pressure.
 helper function to get a subset of LPO\_weather\_data observations are
 the date range variables are barometric pressure, date, and time
 
+\begin{quote}
+Transform dates stored as character or numeric vectors to POSIXct
+objects. The ymd\_hms() family of functions recognizes all
+non-alphanumeric separators (with the exception of ``.'' if frac = TRUE)
+and correctly handles heterogeneous date-time representations. For more
+flexibility in treatment of heterogeneous formats, see low level parser
+parse\_date\_time().
+\end{quote}
+
 \begin{Shaded}
 \begin{Highlighting}[]
 \NormalTok{getBaromPressures }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(dateTimeInterval) \{}
-  \FunctionTok{subset}\NormalTok{(}
-\NormalTok{    LPO\_weather\_data,}
-    \FunctionTok{ymd\_hms}\NormalTok{(}\FunctionTok{paste}\NormalTok{(date, time)) }\SpecialCharTok{\%within\%}\NormalTok{ dateTimeInterval,}
-    \AttributeTok{select =} \FunctionTok{c}\NormalTok{(Barometric\_Press, date, time)}
-\NormalTok{  )}
+  \FunctionTok{subset}\NormalTok{(LPO\_weather\_data,}
+         \FunctionTok{ymd\_hms}\NormalTok{(}\FunctionTok{paste}\NormalTok{(date, time)) }\SpecialCharTok{\%within\%}\NormalTok{ dateTimeInterval,}
+         \AttributeTok{select =} \FunctionTok{c}\NormalTok{(Barometric\_Press, date, time)}
+\NormalTok{         )}
 \NormalTok{\}}
 
 \NormalTok{calculateBaroPress }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(startDateTime, endDateTime) \{}
@@ -522,8 +328,24 @@ the date range variables are barometric pressure, date, and time
 \end{verbatim}
 
 A rising slope indicates an increasing barometric pressure, which
-typically means fair and sunny weather. A falling slope indicates a
-decreasing barometric pressure, which typically means stormy weather.
+typically means fair and sunny weather.
+
+\begin{figure}
+\centering
+\includegraphics{Barometric_rising slope.PNG}
+\caption{Barometric \textasciitilde{} rising slope (adapted from
+LinkedIn Learning)}
+\end{figure}
+
+A falling slope indicates a decreasing barometric pressure, which
+typically means stormy weather.
+
+\begin{figure}
+\centering
+\includegraphics{Barometric_falling slope.PNG}
+\caption{Barometric \textasciitilde{} falling slope (adapted from
+LinkedIn Learning)}
+\end{figure}
 
 We're only asking for the coefficient -- but some may choose to generate
 a graph of the results as well.
@@ -561,6 +383,6 @@ a graph of the results as well.
 \end{Highlighting}
 \end{Shaded}
 
-\includegraphics{C:/Users/minhh/Box Sync/R/Master R for Data Science/Code-Clinic-R/output/summarizeTheWeather_files/figure-latex/unnamed-chunk-5-1.pdf}
+\includegraphics{C:/Users/minhh/Box Sync/R/Master R for Data Science/Code-Clinic-R/docs/summarize-theweather_files/figure-latex/unnamed-chunk-10-1.pdf}
 
 \end{document}

@@ -1,0 +1,33 @@
+---
+title: "Where Am I: when I run this code chunk"
+author: "Hai Nguyen"
+date: "4/26/2021"
+knit: (function(input, ...) {
+    rmarkdown::render(
+      input,
+      output_file = paste0(
+        xfun::sans_ext(input), '.pdf'
+      ),
+      output_dir = "../../docs"
+    )
+  })
+output: 
+  pdf_document:
+    toc: true
+    number_sections: true
+    toc_depth: 2
+    fig_width: 7
+    fig_height: 6
+    fig_caption: true
+    df_print: kable
+    highlight: tango
+    keep_tex: true
+fontsize: 11pt
+geometry: margin=1in
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
